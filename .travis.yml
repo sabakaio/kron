@@ -7,6 +7,11 @@ go:
 services:
   - docker
 
+cache:
+  directories:
+    - $HOME/gopath/src/github.com/sabakaio/kron/vendor
+    - $HOME/gopath/vendor
+
 install:
   - mkdir -p $GOPATH/bin
   - curl https://glide.sh/get | sh
