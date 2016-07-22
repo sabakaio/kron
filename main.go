@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
+	// "os"
 
 	"github.com/robfig/cron"
 	"k8s.io/kubernetes/pkg/api"
@@ -54,12 +54,12 @@ func CreateClient() (k *client.Client) {
 	// config := &restclient.Config{
 	// Host: host,
 	// }
-	config, err := &restclient.InClusterConfig()
+	config, err := restclient.InClusterConfig()
 	if err != nil {
 		log.Fatalln("Can't connect to Kubernetes API using ClusterConfig:", err)
 	}
 
-	k, err := client.New(config)
+	k, err = client.New(config)
 
 	if err != nil {
 		log.Fatalln("Can't connect to Kubernetes API:", err)
