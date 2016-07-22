@@ -42,7 +42,8 @@ func main() {
 func CopyJob(job batch.Job) *batch.Job {
 	newjob := batch.Job{}
 	newjob.Spec.Template.Spec = job.Spec.Template.Spec
-	newjob.ObjectMeta.SetGenerateName("kron-")
+	genName := "kron-" + job.GetName() + "-"
+	newjob.ObjectMeta.SetGenerateName(genName)
 	return &newjob
 }
 
