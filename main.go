@@ -47,13 +47,18 @@ func CopyJob(job batch.Job) *batch.Job {
 }
 
 func CreateClient() (k *client.Client) {
-	host := os.Getenv("KUBERNETES_PORT")
-	if len(host) == 0 {
-		host = "http://localhost:8001"
+	// host := os.Getenv("KUBERNETES_PORT")
+	// if len(host) == 0 {
+	// host = "http://localhost:8001"
+	// }
+	// config := &restclient.Config{
+	// Host: host,
+	// }
+	config, err := &restclient.InClusterConfig()
+	if err != nil {
+		log.Fatalln("Can't connect to Kubernetes API using ClusterConfig:", err)
 	}
-	config := &restclient.Config{
-		Host: host,
-	}
+
 	k, err := client.New(config)
 
 	if err != nil {
