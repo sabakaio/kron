@@ -1,0 +1,22 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "test-job"
+  labels:
+    origin: "krontab"
+  annotations:
+    schedule: "@every 20s"
+spec:
+  completions: 0
+  template:
+    metadata:
+      name: test-job
+    spec:
+      containers:
+      - image: alpine:3.4
+        name: test-job
+        command: ["echo", "$TEST_VAR"]
+        env:
+        - name: TEST_VAR
+          value: ok
+      restartPolicy: Never
