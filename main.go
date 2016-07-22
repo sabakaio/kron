@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/robfig/cron"
 	"k8s.io/kubernetes/pkg/api"
@@ -46,8 +47,12 @@ func CopyJob(job batch.Job) *batch.Job {
 }
 
 func CreateClient() (k *client.Client) {
+	host := os.Getenv("KUBERNETES_PORT")
+	if len(host) == 0 {
+		host = "http://localhost:8001"
+	}
 	config := &restclient.Config{
-		Host: "http://localhost:8001",
+		Host: host,
 	}
 	k, err := client.New(config)
 
