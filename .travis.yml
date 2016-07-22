@@ -1,8 +1,15 @@
 language: go
+sudo: required
 
 go:
   - 1.6
 
+services:
+  - docker
+
 install:
   - curl https://glide.sh/get | sh
   - glide install
+
+script:
+  - go build
