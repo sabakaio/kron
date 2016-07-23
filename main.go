@@ -1,87 +1,27 @@
+// Copyright © 2016 Arseny Zarechnev <arseny@sabaka.io>
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
 package main
 
-import (
-	"fmt"
-	"log"
-	// "os"
-
-	"github.com/robfig/cron"
-	"k8s.io/kubernetes/pkg/api"
-	"k8s.io/kubernetes/pkg/apis/batch"
-	"k8s.io/kubernetes/pkg/client/restclient"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/labels"
-)
+import "github.com/sabakaio/kron/cmd"
 
 func main() {
-	k := CreateClient()
-	jobs := ListJobs(k)
-
-	cr := cron.New()
-
-	for j, _ := range jobs.Items {
-		fmt.Println("Scheduling job", jobs.Items[j].GetName())
-		scheduledJob := CopyJob(jobs.Items[j])
-
-		cr.AddFunc(jobs.Items[j].GetAnnotations()["schedule"], func() {
-			createdJob, err := k.Batch().Jobs(api.NamespaceDefault).Create(scheduledJob)
-			if err != nil {
-				fmt.Println("xxx")
-				log.Fatalln("Can't create Job:", err)
-			}
-
-			fmt.Println(createdJob.Name)
-		})
-	}
-
-	fmt.Println("Starting kron")
-	cr.Start()
-	select {}
-}
-
-func CopyJob(job batch.Job) *batch.Job {
-	newjob := batch.Job{}
-	newjob.Spec.Template.Spec = job.Spec.Template.Spec
-	genName := "kron-" + job.GetName() + "-"
-	newjob.ObjectMeta.SetGenerateName(genName)
-	return &newjob
-}
-
-func CreateClient() (k *client.Client) {
-	// host := os.Getenv("KUBERNETES_PORT")
-	// if len(host) == 0 {
-	// host = "http://localhost:8001"
-	// }
-	// config := &restclient.Config{
-	// Host: host,
-	// }
-	config, err := restclient.InClusterConfig()
-	if err != nil {
-		log.Fatalln("Can't connect to Kubernetes API using ClusterConfig:", err)
-	}
-
-	k, err = client.New(config)
-
-	if err != nil {
-		log.Fatalln("Can't connect to Kubernetes API:", err)
-	}
-
-	return
-}
-
-func ListJobs(k *client.Client) (jobs *batch.JobList) {
-	kronSelector, err := labels.Parse("origin = krontab")
-	if err != nil {
-		log.Fatalln("Can't parse selector:", err)
-	}
-
-	opts := api.ListOptions{}
-	opts.LabelSelector = kronSelector
-	jobs, err = k.Batch().Jobs(api.NamespaceDefault).List(opts)
-
-	if err != nil {
-		log.Fatalln("Can't get jobs from Kubernetes API:", err)
-	}
-
-	return
+	cmd.Execute()
 }
