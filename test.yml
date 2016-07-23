@@ -3,9 +3,9 @@ kind: Job
 metadata:
   name: "test-job"
   labels:
-    origin: "krontab"
+    kron: "true"
   annotations:
-    schedule: "@every 20s"
+    schedule: "@every 30s"
 spec:
   completions: 0
   template:
@@ -15,8 +15,5 @@ spec:
       containers:
       - image: alpine:3.4
         name: test-job
-        command: ["echo", "$TEST_VAR"]
-        env:
-        - name: TEST_VAR
-          value: ok
+        command: ["echo", "hello"]
       restartPolicy: Never

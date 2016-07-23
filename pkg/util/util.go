@@ -35,13 +35,17 @@ func CopyJob(job batch.Job) *batch.Job {
 	genName := "kron-" + job.GetName() + "-"
 
 	copy.ObjectMeta.SetGenerateName(genName)
+	copy.ObjectMeta.SetLabels(map[string]string{
+		"origin":   "kron",
+		"template": job.GetName(),
+	})
 
 	return &copy
 }
 
 // ListJobs gets kron jobs using a label
 func ListJobs(k *client.Client, namespace string) (jobs *batch.JobList, err error) {
-	kronSelector, err := labels.Parse("origin = krontab")
+	kronSelector, err := labels.Parse("kron = true")
 	if err != nil {
 		return
 	}
