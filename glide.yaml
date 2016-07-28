@@ -1,10 +1,13 @@
 package: github.com/sabakaio/kron
 import:
-- package: github.com/robfig/cron
-  version: ~1.0.0
 - package: k8s.io/kubernetes
   version: 1.3.0
   subpackages:
   - pkg/client/unversioned
   - pkg/client/restclient
   - pkg/api
+- package: github.com/smartystreets/goconvey
+  version: 1.6.2
+- package: gopkg.in/robfig/cron.v2
+  version: v2
+- package: github.com/spf13/cobra

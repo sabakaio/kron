@@ -6,6 +6,7 @@ import (
 	"k8s.io/kubernetes/pkg/client/restclient"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
 	"k8s.io/kubernetes/pkg/labels"
+	"k8s.io/kubernetes/pkg/watch"
 )
 
 // CreateClient creates a client for Kubernetes cluster
@@ -28,7 +29,7 @@ func CreateClient(host string) (k *client.Client, err error) {
 }
 
 // CopyJob creates a copy of k8s batch Job
-func CopyJob(job batch.Job) *batch.Job {
+func CopyJob(job *batch.Job) *batch.Job {
 	copy := batch.Job{}
 	copy.Spec.Template.Spec = job.Spec.Template.Spec
 
@@ -44,8 +45,8 @@ func CopyJob(job batch.Job) *batch.Job {
 }
 
 // ListJobs gets kron jobs using a label
-func ListJobs(k *client.Client, namespace string) (jobs *batch.JobList, err error) {
-	kronSelector, err := labels.Parse("kron = true")
+func ListJobExecutions(k *client.Client, namespace string) (jobs *batch.JobList, err error) {
+	kronSelector, err := labels.Parse("origin=kron")
 	if err != nil {
 		return
 	}
@@ -53,6 +54,21 @@ func ListJobs(k *client.Client, namespace string) (jobs *batch.JobList, err erro
 	opts := api.ListOptions{}
 	opts.LabelSelector = kronSelector
 	jobs, err = k.Batch().Jobs(namespace).List(opts)
+
+	return
+}
+
+// WatchJobs watches jobs
+func WatchJobs(k *client.Client, namespace string) (watcher watch.Interface, err error) {
+	kronSelector, err := labels.Parse("kron = true")
+	if err != nil {
+		return
+	}
+
+	opts := api.ListOptions{}
+	opts.LabelSelector = kronSelector
+	opts.Watch = true
+	watcher, err = k.Batch().Jobs(namespace).Watch(opts)
 
 	return
 }

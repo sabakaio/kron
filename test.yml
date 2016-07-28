@@ -17,3 +17,43 @@ spec:
         name: test-job
         command: ["echo", "hello"]
       restartPolicy: Never
+# ---
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+  # name: "test-job2"
+  # labels:
+    # kron: "true"
+  # annotations:
+    # schedule: "@every 30s"
+# spec:
+  # completions: 0
+  # template:
+    # metadata:
+      # name: test-job2
+    # spec:
+      # containers:
+      # - image: alpine:3.4
+        # name: test-job2
+        # command: ["echo", "hello"]
+      # restartPolicy: Never
+# ---
+# apiVersion: batch/v1
+# kind: Job
+# metadata:
+  # name: "test-job3"
+  # labels:
+    # kron: "true"
+  # annotations:
+    # schedule: "@every 30s"
+# spec:
+  # completions: 0
+  # template:
+    # metadata:
+      # name: test-job3
+    # spec:
+      # containers:
+      # - image: alpine:3.4
+        # name: test-job3
+        # command: ["echo", "hello"]
+      # restartPolicy: Never

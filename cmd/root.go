@@ -26,6 +26,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/kubernetes/pkg/api"
 )
 
 var cfgFile string
@@ -54,6 +55,8 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "c", "config file (default is $HOME/.kron.yaml)")
+	RootCmd.PersistentFlags().StringP("namespace", "n", api.NamespaceDefault, "Kubernetes namespace")
+	RootCmd.PersistentFlags().StringP("host", "H", "", "Kubernetes host to connect to")
 }
 
 // initConfig reads in config file and ENV variables if set.
