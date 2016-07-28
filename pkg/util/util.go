@@ -44,9 +44,23 @@ func CopyJob(job *batch.Job) *batch.Job {
 	return &copy
 }
 
-// ListJobs gets kron jobs using a label
+// ListJobExecutions finds all jobs scheduled by kron
 func ListJobExecutions(k *client.Client, namespace string) (jobs *batch.JobList, err error) {
 	kronSelector, err := labels.Parse("origin=kron")
+	if err != nil {
+		return
+	}
+
+	opts := api.ListOptions{}
+	opts.LabelSelector = kronSelector
+	jobs, err = k.Batch().Jobs(namespace).List(opts)
+
+	return
+}
+
+// ListJobs finds all job templates
+func ListJobs(k *client.Client, namespace string) (jobs *batch.JobList, err error) {
+	kronSelector, err := labels.Parse("kron=true")
 	if err != nil {
 		return
 	}
