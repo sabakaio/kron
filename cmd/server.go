@@ -44,6 +44,7 @@ var jobMapping map[string]cron.EntryID
 var namespace string
 var noGc bool
 var gcInterval int
+var gcAge float64
 
 func serverFn(cmd *cobra.Command, args []string) {
 	namespace = cmd.Flag("namespace").Value.String()
@@ -84,7 +85,7 @@ func garbageCollect(k *client.Client) {
 			since := time.Since(t.Time).Hours()
 			log.Println("Found job", job.GetName())
 			log.Println("Since: ", since)
-			if since > 4 {
+			if since > gcAge {
 				opts := api.DeleteOptions{}
 				k.Batch().Jobs(namespace).Delete(job.GetName(), &opts)
 			}
@@ -140,5 +141,6 @@ func eventListener(k *client.Client, cr *cron.Cron, event watch.Event) {
 func init() {
 	serverCmd.Flags().BoolVar(&noGc, "no-gc", false, "Disable garbage collector")
 	serverCmd.Flags().IntVar(&gcInterval, "gc-interval", 1, "Garbage collection interval in minutes")
+	serverCmd.Flags().Float64Var(&gcAge, "gc-age", 0.1, "Garbage collect jobs older than this value in hours")
 	RootCmd.AddCommand(serverCmd)
 }
