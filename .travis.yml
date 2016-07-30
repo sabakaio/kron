@@ -20,6 +20,9 @@ install:
 script:
   - CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo
   - docker build -t sabaka/kron .
+  - if [ "$TRAVIS_TAG" != "" ]; then
+      docker tag sabaka/kron "sabaka/kron:$TRAVIS_TAG"
+    fi
 
 after_success:
   - >

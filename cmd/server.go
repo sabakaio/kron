@@ -21,14 +21,16 @@
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"time"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/sabakaio/kron/pkg/util"
 	"github.com/spf13/cobra"
 	"gopkg.in/robfig/cron.v2"
 	"k8s.io/kubernetes/pkg/api"
 	client "k8s.io/kubernetes/pkg/client/unversioned"
+	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/watch"
 )
 
@@ -61,7 +63,7 @@ func serverFn(cmd *cobra.Command, args []string) {
 	}
 
 	cr := cron.New()
-	log.Println("Starting kron")
+	log.Infoln("Starting kron")
 	cr.Start()
 
 	if noGc != true {
@@ -73,9 +75,9 @@ func serverFn(cmd *cobra.Command, args []string) {
 }
 
 func garbageCollect(k *client.Client) {
-	log.Println("GC enabled, interval", gcInterval)
+	log.Debugln("GC enabled, interval", gcInterval)
 	for {
-		log.Println("Collecting garbage")
+		log.Debugln("Collecting garbage")
 		jobs, err := util.ListJobExecutions(k, namespace)
 		if err != nil {
 			log.Fatalln("Can't start watching Jobs on Kubernetes API:", err)
@@ -83,11 +85,26 @@ func garbageCollect(k *client.Client) {
 		for _, job := range jobs.Items {
 			t := job.GetCreationTimestamp()
 			since := time.Since(t.Time).Hours()
-			log.Println("Found job", job.GetName())
-			log.Println("Since: ", since)
+			log.Debugln("Found job", job.GetName())
+			log.Debugln("Since: ", since)
 			if since > gcAge {
-				opts := api.DeleteOptions{}
-				k.Batch().Jobs(namespace).Delete(job.GetName(), &opts)
+				deleteOpts := api.DeleteOptions{}
+				listOpts := api.ListOptions{}
+				uid := job.GetObjectMeta().GetUID()
+				label := "controller-uid=" + fmt.Sprintf("%s", uid)
+				selector, err := labels.Parse(label)
+				if err != nil {
+					log.Debugln(err)
+				}
+				listOpts.LabelSelector = selector
+				pods, err := k.Pods(namespace).List(listOpts)
+				if err != nil {
+					log.Debugln(err)
+				}
+				for _, pod := range pods.Items {
+					k.Pods(namespace).Delete(pod.GetName(), &deleteOpts)
+				}
+				k.Batch().Jobs(namespace).Delete(job.GetName(), &deleteOpts)
 			}
 		}
 		time.Sleep(time.Duration(gcInterval) * time.Minute)
@@ -95,13 +112,13 @@ func garbageCollect(k *client.Client) {
 }
 
 func eventListener(k *client.Client, cr *cron.Cron, event watch.Event) {
-	log.Println("Got event", event.Type)
+	log.Debugln("Got event", event.Type)
 
 	ref, err := api.GetReference(event.Object)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	log.Println(ref.Name)
+	log.Debugln(ref.Name)
 
 	switch event.Type {
 	case watch.Deleted:
@@ -131,11 +148,11 @@ func eventListener(k *client.Client, cr *cron.Cron, event watch.Event) {
 			log.Fatalln("Can't create Job:", err)
 		}
 
-		log.Println("Scheduled a job:", createdJob.GetName())
+		log.Infoln("Scheduled a job:", createdJob.GetName())
 	})
 
 	jobMapping[ref.Name] = id
-	log.Println("Total kron entries:", len(cr.Entries()))
+	log.Debugln("Total kron entries:", len(cr.Entries()))
 }
 
 func init() {

@@ -11,3 +11,5 @@ import:
 - package: gopkg.in/robfig/cron.v2
   version: v2
 - package: github.com/spf13/cobra
+- package: github.com/Sirupsen/logrus
+  version: v0.10.0

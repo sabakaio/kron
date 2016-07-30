@@ -24,12 +24,14 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/kubernetes/pkg/api"
 )
 
 var cfgFile string
+var logLevel string
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
@@ -40,12 +42,14 @@ var RootCmd = &cobra.Command{
 TODO: example`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	// Run: func(cmd *cobra.Command, args []string) {
+	// },
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(-1)
@@ -54,9 +58,11 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(initLogging)
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "c", "config file (default is $HOME/.kron.yaml)")
 	RootCmd.PersistentFlags().StringP("namespace", "n", api.NamespaceDefault, "Kubernetes namespace")
 	RootCmd.PersistentFlags().StringP("host", "H", "", "Kubernetes host to connect to")
+	RootCmd.PersistentFlags().StringVarP(&logLevel, "loglevel", "l", log.DebugLevel.String(), "Log level")
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -73,4 +79,13 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
+}
+
+func initLogging() {
+	level, err := log.ParseLevel(logLevel)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	log.SetLevel(level)
+	log.Debugln("Loglevel set to", log.GetLevel().String())
 }
