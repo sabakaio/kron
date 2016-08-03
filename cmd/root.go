@@ -1,4 +1,4 @@
-// Copyright © 2016 Arseny Zarechnev <arseny@sabaka.io>
+// Copyright © 2016 Sabaka OU <hello@sabaka.io>
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
