@@ -1,5 +1,5 @@
 hash: 2573955d3717426c93beb6161e6f73e1a430e3792695cc2961445c640979fb4f
-updated: 2016-07-30T16:40:32.583605836+03:00
+updated: 2016-08-03T18:00:21.739782905+03:00
 imports:
 - name: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
@@ -215,7 +215,7 @@ imports:
 - name: github.com/spf13/cast
   version: 27b586b42e29bec072fe7379259cc719e1289da6
 - name: github.com/spf13/cobra
-  version: f62e98d28ab7ad31d707ba837a966378465c7b57
+  version: 7c674d9e72017ed25f6d2b5e497a1368086b6a6f
 - name: github.com/spf13/jwalterweatherman
   version: 33c24e77fb80341fe7130ee7c594256ff08ccc46
 - name: github.com/spf13/pflag

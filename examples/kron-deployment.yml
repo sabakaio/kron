@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kron
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kron
+spec:
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      serviceAccountName: kron
+      containers:
+      - image: "sabaka/kron:v0.0.3"
+        name: kron
