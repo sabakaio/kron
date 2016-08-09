@@ -1,5 +1,5 @@
 hash: 2573955d3717426c93beb6161e6f73e1a430e3792695cc2961445c640979fb4f
-updated: 2016-08-03T18:00:21.739782905+03:00
+updated: 2016-08-09T04:09:09.715158306+03:00
 imports:
 - name: github.com/beorn7/perks
   version: 3ac7bf7a47d159a033b107610db8a1b6575507a4
@@ -219,7 +219,7 @@ imports:
 - name: github.com/spf13/jwalterweatherman
   version: 33c24e77fb80341fe7130ee7c594256ff08ccc46
 - name: github.com/spf13/pflag
-  version: 1560c1005499d61b80f865c04d39ca7505bf7f0b
+  version: f676131e2660dc8cd88de99f7486d34aa8172635
 - name: github.com/spf13/viper
   version: b53595fb56a492ecef90ee0457595a999eb6ec15
 - name: github.com/ugorji/go
@@ -254,15 +254,15 @@ imports:
 - name: google.golang.org/appengine
   version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
   subpackages:
-  - urlfetch
   - internal
-  - internal/urlfetch
   - internal/app_identity
-  - internal/modules
   - internal/base
   - internal/datastore
   - internal/log
+  - internal/modules
   - internal/remote_api
+  - urlfetch
+  - internal/urlfetch
 - name: google.golang.org/cloud
   version: eb47ba841d53d93506cfbfbc03927daf9cc48f88
   subpackages:
@@ -280,9 +280,9 @@ imports:
   - pkg/client/unversioned
   - pkg/client/restclient
   - pkg/api
-  - pkg/labels
   - pkg/watch
   - pkg/apis/batch
+  - pkg/labels
   - pkg/api/meta
   - pkg/api/meta/metatypes
   - pkg/api/resource
@@ -297,7 +297,20 @@ imports:
   - pkg/util/intstr
   - pkg/util/rand
   - pkg/util/sets
+  - pkg/util/net
+  - pkg/util/runtime
+  - pkg/util/wait
   - pkg/api/errors
+  - pkg/api/v1
+  - pkg/api/validation
+  - pkg/client/metrics
+  - pkg/client/transport
+  - pkg/client/unversioned/clientcmd/api
+  - pkg/runtime/serializer/streaming
+  - pkg/util/crypto
+  - pkg/util/flowcontrol
+  - pkg/version
+  - pkg/watch/versioned
   - pkg/api/install
   - pkg/apimachinery/registered
   - pkg/apis/apps
@@ -316,21 +329,8 @@ imports:
   - pkg/apis/rbac
   - pkg/apis/rbac/install
   - pkg/client/typed/discovery
-  - pkg/util/net
-  - pkg/util/wait
-  - pkg/version
   - plugin/pkg/client/auth
   - pkg/util/validation
-  - pkg/util/runtime
-  - pkg/api/v1
-  - pkg/api/validation
-  - pkg/client/metrics
-  - pkg/client/transport
-  - pkg/client/unversioned/clientcmd/api
-  - pkg/runtime/serializer/streaming
-  - pkg/util/crypto
-  - pkg/util/flowcontrol
-  - pkg/watch/versioned
   - pkg/util/errors
   - third_party/forked/reflect
   - pkg/conversion/queryparams
@@ -340,6 +340,15 @@ imports:
   - pkg/runtime/serializer/recognizer
   - pkg/runtime/serializer/versioning
   - pkg/util/validation/field
+  - pkg/util/parsers
+  - pkg/api/endpoints
+  - pkg/api/pod
+  - pkg/api/service
+  - pkg/api/unversioned/validation
+  - pkg/api/util
+  - pkg/capabilities
+  - pkg/util/yaml
+  - pkg/util/integer
   - pkg/apimachinery
   - pkg/apis/apps/v1alpha1
   - pkg/apis/authentication.k8s.io
@@ -355,20 +364,11 @@ imports:
   - pkg/apis/rbac/v1alpha1
   - plugin/pkg/client/auth/gcp
   - plugin/pkg/client/auth/oidc
-  - pkg/util/parsers
-  - pkg/api/endpoints
-  - pkg/api/pod
-  - pkg/api/service
-  - pkg/api/unversioned/validation
-  - pkg/api/util
-  - pkg/capabilities
-  - pkg/util/yaml
-  - pkg/util/integer
   - pkg/util/framer
-  - pkg/kubelet/qos
-  - pkg/master/ports
   - pkg/util/hash
   - pkg/util/net/sets
+  - pkg/kubelet/qos
+  - pkg/master/ports
   - pkg/kubelet/qos/util
 testImports:
 - name: github.com/gopherjs/gopherjs

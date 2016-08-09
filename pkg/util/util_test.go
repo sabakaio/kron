@@ -48,26 +48,21 @@ func TestWatchJobs(t *testing.T) {
 		watcher, err := k.WatchJobs()
 		So(err, ShouldBeNil)
 
-		for {
-			event, ok := <-watcher.ResultChan()
-			ref, err := api.GetReference(event.Object)
-			if err != nil {
-				t.Fail()
-			}
-
-			job, err := k.Jobs().Get(ref.Name)
-			if err != nil {
-				t.Fail()
-			}
-
-			fmt.Println(ok, event.Type, ref.ResourceVersion, ref.Name, job.GetName())
-			// t.Log(event.Type)
-			// t.Log(job.GetName())
-
+		event, ok := <-watcher.ResultChan()
+		ref, err := api.GetReference(event.Object)
+		if err != nil {
+			t.Fail()
 		}
 
-		// So(err, ShouldBeNil)
+		job, err := k.Jobs().Get(ref.Name)
+		if err != nil {
+			t.Fail()
+		}
 
-		// So(job.GetName(), ShouldEqual, "test-job")
+		t.Log(event.Type)
+		t.Log(job.GetName())
+
+		So(err, ShouldBeNil)
+		So(job.GetName(), ShouldEqual, "test-job")
 	})
 }
