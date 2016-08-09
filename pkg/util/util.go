@@ -21,6 +21,9 @@
 package util
 
 import (
+	"fmt"
+
+	log "github.com/Sirupsen/logrus"
 	"k8s.io/kubernetes/pkg/api"
 	"k8s.io/kubernetes/pkg/apis/batch"
 	"k8s.io/kubernetes/pkg/client/restclient"
@@ -29,8 +32,13 @@ import (
 	"k8s.io/kubernetes/pkg/watch"
 )
 
+type KronClient struct {
+	K         *client.Client
+	namespace string
+}
+
 // CreateClient creates a client for Kubernetes cluster
-func CreateClient(host string) (k *client.Client, err error) {
+func NewClient(host string, namespace string) (k *KronClient, err error) {
 	var config *restclient.Config
 
 	if len(host) == 0 {
@@ -44,7 +52,15 @@ func CreateClient(host string) (k *client.Client, err error) {
 		}
 	}
 
-	k, err = client.New(config)
+	k8sClient, err := client.New(config)
+	if err != nil {
+		return k, err
+	}
+
+	k = &KronClient{
+		namespace: namespace,
+		K:         k8sClient,
+	}
 	return
 }
 
@@ -65,7 +81,7 @@ func CopyJob(job *batch.Job) *batch.Job {
 }
 
 // ListJobExecutions finds all jobs scheduled by kron
-func ListJobExecutions(k *client.Client, namespace string) (jobs *batch.JobList, err error) {
+func (k *KronClient) ListJobExecutions() (jobs *batch.JobList, err error) {
 	kronSelector, err := labels.Parse("origin=kron")
 	if err != nil {
 		return
@@ -73,13 +89,13 @@ func ListJobExecutions(k *client.Client, namespace string) (jobs *batch.JobList,
 
 	opts := api.ListOptions{}
 	opts.LabelSelector = kronSelector
-	jobs, err = k.Batch().Jobs(namespace).List(opts)
+	jobs, err = k.K.Batch().Jobs(k.namespace).List(opts)
 
 	return
 }
 
 // ListJobs finds all job templates
-func ListJobs(k *client.Client, namespace string) (jobs *batch.JobList, err error) {
+func (k *KronClient) ListJobs() (jobs *batch.JobList, err error) {
 	kronSelector, err := labels.Parse("kron=true")
 	if err != nil {
 		return
@@ -87,14 +103,14 @@ func ListJobs(k *client.Client, namespace string) (jobs *batch.JobList, err erro
 
 	opts := api.ListOptions{}
 	opts.LabelSelector = kronSelector
-	jobs, err = k.Batch().Jobs(namespace).List(opts)
+	jobs, err = k.K.Batch().Jobs(k.namespace).List(opts)
 
 	return
 }
 
 // WatchJobs watches jobs
-func WatchJobs(k *client.Client, namespace string) (watcher watch.Interface, err error) {
-	kronSelector, err := labels.Parse("kron = true")
+func (k *KronClient) WatchJobs() (watcher watch.Interface, err error) {
+	kronSelector, err := labels.Parse("kron=true")
 	if err != nil {
 		return
 	}
@@ -102,7 +118,41 @@ func WatchJobs(k *client.Client, namespace string) (watcher watch.Interface, err
 	opts := api.ListOptions{}
 	opts.LabelSelector = kronSelector
 	opts.Watch = true
-	watcher, err = k.Batch().Jobs(namespace).Watch(opts)
+	watcher, err = k.K.Batch().Jobs(k.namespace).Watch(opts)
+
+	return
+}
+
+func (k *KronClient) Jobs() client.JobInterface {
+	return k.K.Batch().Jobs(k.namespace)
+}
+
+// DeletePodsInJob deletes all Pods which were created for a Job
+func (k *KronClient) DeletePodsInJob(job *batch.Job) (err error) {
+	deleteOpts := api.DeleteOptions{}
+	listOpts := api.ListOptions{}
+	uid := job.GetObjectMeta().GetUID()
+	label := "controller-uid=" + fmt.Sprintf("%s", uid)
+
+	selector, err := labels.Parse(label)
+	if err != nil {
+		log.Errorln(fmt.Sprintf("Error parsing label, skipping GC for job %s", job.GetName()), err)
+		return
+	}
+
+	listOpts.LabelSelector = selector
+	pods, err := k.K.Pods(k.namespace).List(listOpts)
+	if err != nil {
+		log.Errorln(fmt.Sprintf("Error getting pods, skipping GC for job %s", job.GetName()), err)
+		return
+	}
+
+	for _, pod := range pods.Items {
+		err := k.K.Pods(k.namespace).Delete(pod.GetName(), &deleteOpts)
+		if err != nil {
+			log.Errorln(fmt.Sprintf("Error deleting pod %s", pod.GetName()), err)
+		}
+	}
 
 	return
 }

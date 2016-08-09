@@ -29,8 +29,6 @@ import (
 	"github.com/spf13/cobra"
 	"gopkg.in/robfig/cron.v2"
 	"k8s.io/kubernetes/pkg/api"
-	client "k8s.io/kubernetes/pkg/client/unversioned"
-	"k8s.io/kubernetes/pkg/labels"
 	"k8s.io/kubernetes/pkg/watch"
 )
 
@@ -47,17 +45,18 @@ var namespace string
 var noGc bool
 var gcInterval int
 var gcAge float64
+var k *util.KronClient
 
 func serverFn(cmd *cobra.Command, args []string) {
 	namespace = cmd.Flag("namespace").Value.String()
 	jobMapping = map[string]cron.EntryID{}
 
-	k, err := util.CreateClient(cmd.Flag("host").Value.String())
+	k, err := util.NewClient(cmd.Flag("host").Value.String(), namespace)
 	if err != nil {
 		log.Fatalln("Can't connect to Kubernetes API:", err)
 	}
 
-	watcher, err := util.WatchJobs(k, namespace)
+	watcher, err := k.WatchJobs()
 	if err != nil {
 		log.Fatalln("Can't start watching Jobs on Kubernetes API:", err)
 	}
@@ -74,82 +73,91 @@ func serverFn(cmd *cobra.Command, args []string) {
 	}
 }
 
-func garbageCollect(k *client.Client) {
+func garbageCollect(k *util.KronClient) {
 	log.Debugln("GC enabled, interval", gcInterval)
 	for {
 		log.Debugln("Collecting garbage")
-		jobs, err := util.ListJobExecutions(k, namespace)
+		jobs, err := k.ListJobExecutions()
 		if err != nil {
-			log.Fatalln("Can't start watching Jobs on Kubernetes API:", err)
+			log.Errorln("Can't list job executions during GC, skipping gc cycle:", err)
+			continue // skip GC cycle
 		}
 		for _, job := range jobs.Items {
 			t := job.GetCreationTimestamp()
 			since := time.Since(t.Time).Hours()
+
 			log.Debugln("Found job", job.GetName())
-			log.Debugln("Since: ", since)
+
 			if since > gcAge {
+				log.Debugln("Job should be removed", job.GetName())
+				err := k.DeletePodsInJob(&job)
+				if err != nil {
+					log.Errorln(fmt.Sprintf("Job %s will not be deleted, errors occured during pods deletion:", job.GetName()), err)
+					continue // next job
+				}
 				deleteOpts := api.DeleteOptions{}
-				listOpts := api.ListOptions{}
-				uid := job.GetObjectMeta().GetUID()
-				label := "controller-uid=" + fmt.Sprintf("%s", uid)
-				selector, err := labels.Parse(label)
+				err = k.Jobs().Delete(job.GetName(), &deleteOpts)
+
 				if err != nil {
-					log.Debugln(err)
+					log.Errorln(fmt.Sprintf("Error deleting job %s:", job.GetName()), err)
+					continue // next job
 				}
-				listOpts.LabelSelector = selector
-				pods, err := k.Pods(namespace).List(listOpts)
-				if err != nil {
-					log.Debugln(err)
-				}
-				for _, pod := range pods.Items {
-					k.Pods(namespace).Delete(pod.GetName(), &deleteOpts)
-				}
-				k.Batch().Jobs(namespace).Delete(job.GetName(), &deleteOpts)
+
+				log.Debugln("Job removed")
 			}
 		}
 		time.Sleep(time.Duration(gcInterval) * time.Minute)
 	}
 }
 
-func eventListener(k *client.Client, cr *cron.Cron, event watch.Event) {
+func eventListener(k *util.KronClient, cr *cron.Cron, event watch.Event) {
 	log.Debugln("Got event", event.Type)
 
 	ref, err := api.GetReference(event.Object)
 	if err != nil {
-		log.Fatalln(err)
+		log.Errorln("Error getting object reference, aborting event processing:", err)
+		return
 	}
+
 	log.Debugln(ref.Name)
 
 	switch event.Type {
 	case watch.Deleted:
 		cr.Remove(jobMapping[ref.Name])
 		delete(jobMapping, ref.Name)
-		log.Println(len(cr.Entries()))
+		log.Debugln(len(cr.Entries()))
 		return
 	case watch.Modified:
 		cr.Remove(jobMapping[ref.Name])
 		delete(jobMapping, ref.Name)
 	case watch.Error:
-		log.Panicln(event.Object)
+		log.Errorln("Got Error event:", event.Object)
 		return
 	}
 
-	job, err := k.Batch().Jobs(namespace).Get(ref.Name)
+	job, err := k.Jobs().Get(ref.Name)
 	if err != nil {
-		log.Panicln(err)
+		log.Errorln(fmt.Sprintf("Error getting job %s, aborting action:", ref.Name), err)
+		return
 	}
 
 	schedule := job.GetAnnotations()["schedule"]
 	scheduledJob := util.CopyJob(job)
 
-	id, _ := cr.AddFunc(schedule, func() {
-		createdJob, err := k.Batch().Jobs(namespace).Create(scheduledJob)
+	id, err := cr.AddFunc(schedule, func() {
+		createdJob, err := k.Jobs().Create(scheduledJob)
 		if err != nil {
-			log.Fatalln("Can't create Job:", err)
+			log.Errorln("Can't create Job:", err)
+			return
 		}
 
-		log.Infoln("Scheduled a job:", createdJob.GetName())
+		log.Infoln("Schedulede a job ", createdJob.GetName())
 	})
+
+	if err != nil {
+		log.Errorln(fmt.Sprintf("Error scheduling job %s, aborting action:", ref.Name), err)
+		return
+	}
 
 	jobMapping[ref.Name] = id
 	log.Debugln("Total kron entries:", len(cr.Entries()))
@@ -157,7 +165,7 @@ func eventListener(k *client.Client, cr *cron.Cron, event watch.Event) {
 
 func init() {
 	serverCmd.Flags().BoolVar(&noGc, "no-gc", false, "Disable garbage collector")
-	serverCmd.Flags().IntVar(&gcInterval, "gc-interval", 1, "Garbage collection interval in minutes")
-	serverCmd.Flags().Float64Var(&gcAge, "gc-age", 0.1, "Garbage collect jobs older than this value in hours")
+	serverCmd.Flags().IntVar(&gcInterval, "gc-interval", 5, "Garbage collection interval in minutes")
+	serverCmd.Flags().Float64Var(&gcAge, "gc-age", 24, "Garbage collect jobs older than this value in hours")
 	RootCmd.AddCommand(serverCmd)
 }

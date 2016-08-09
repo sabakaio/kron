@@ -29,10 +29,10 @@ import (
 
 func TestListJobs(t *testing.T) {
 	Convey("List jobs", t, func() {
-		k, err := CreateClient("http://localhost:8001")
+		k, err := NewClient("http://localhost:8001", api.NamespaceDefault)
 		So(err, ShouldBeNil)
 
-		jobs, err := ListJobs(k, "default")
+		jobs, err := k.ListJobs()
 		So(err, ShouldBeNil)
 
 		name := jobs.Items[0].GetName()
@@ -42,10 +42,10 @@ func TestListJobs(t *testing.T) {
 
 func TestWatchJobs(t *testing.T) {
 	Convey("Watch jobs", t, func() {
-		k, err := CreateClient("http://localhost:8001")
+		k, err := NewClient("http://localhost:8001", api.NamespaceDefault)
 		So(err, ShouldBeNil)
 
-		watcher, err := WatchJobs(k, "default")
+		watcher, err := k.WatchJobs()
 		So(err, ShouldBeNil)
 
 		for {
@@ -54,10 +54,12 @@ func TestWatchJobs(t *testing.T) {
 			if err != nil {
 				t.Fail()
 			}
-			job, err := k.Batch().Jobs(api.NamespaceDefault).Get(ref.Name)
+
+			job, err := k.Jobs().Get(ref.Name)
 			if err != nil {
 				t.Fail()
 			}
+
 			fmt.Println(ok, event.Type, ref.ResourceVersion, ref.Name, job.GetName())
 			// t.Log(event.Type)
 			// t.Log(job.GetName())
