@@ -68,17 +68,6 @@ func serverFn(cmd *cobra.Command, args []string) {
 	if noGc != true {
 		go garbageCollect(k)
 	}
-	defer func() {
-		watcher, err = k.WatchJobs()
-		if err != nil {
-			log.Fatalln("Can't start watching Jobs on Kubernetes API:", err)
-		}
-	}()
-	defer loop(watcher, cr)
-	loop(watcher, cr)
-}
-
-func loop(watcher watch.Interface, cr *cron.Cron) {
 	for event := range watcher.ResultChan() {
 		eventListener(k, cr, event)
 	}
