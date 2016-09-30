@@ -147,19 +147,20 @@ func eventListener(k *util.KronClient, cr *cron.Cron, event watch.Event) {
 	scheduledJob := util.CopyJob(job)
 
 	id, err := cr.AddFunc(schedule, func() {
-		createdJob, err := k.Jobs().Create(scheduledJob)
+		log.Debugln("Executing job")
+		_, err := k.Jobs().Create(scheduledJob)
 		if err != nil {
 			log.Errorln("Can't create Job:", err)
 			return
 		}
-
-		log.Infoln("Schedulede a job ", createdJob.GetName())
 	})
 
 	if err != nil {
 		log.Errorln(fmt.Sprintf("Error scheduling job %s, aborting action:", ref.Name), err)
 		return
 	}
+
+	log.Infoln("Scheduled a job ", ref.Name, " ", schedule)
 
 	jobMapping[ref.Name] = id
 	log.Debugln("Total kron entries:", len(cr.Entries()))
