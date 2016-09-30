@@ -119,7 +119,9 @@ func eventListener(k *util.KronClient, cr *cron.Cron, event watch.Event) {
 		return
 	}
 
-	log.Debugln(ref.Name)
+	if len(ref.Name) == 0 {
+		return
+	}
 
 	switch event.Type {
 	case watch.Deleted:
